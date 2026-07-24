@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock OTP - Admin Control Center</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Firebase SDK (Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <style> body { background-color: #0B0E11; } </style>
+</head>
+<body class="text-white min-h-screen flex flex-col items-center justify-start pb-20 relative">
+
+    <div class="w-full bg-[#11161B] border-b border-gray-800 p-4 flex justify-between items-center sticky top-0 z-50">
+        <h1 class="text-base font-black uppercase text-white tracking-wider flex items-center gap-2">
+            <span class="text-[#00A859]"><i class="fa-solid fa-shield-halved"></i></span> Admin Control
+        </h1>
+        <span id="status-badge" class="text-[10px] bg-emerald-950/60 text-emerald-400 border border-emerald-800 px-3 py-1 rounded-full font-mono flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Firebase Connected
+        </span>
+    </div>
+
+    <div class="w-full max-w-3xl p-4 md:p-6 flex flex-col gap-6">
+        <div class="bg-[#11161B] border border-gray-800 rounded-2xl p-5 flex flex-col gap-4 text-xs shadow-xl">
+            <h2 class="text-xs font-bold text-[#00A859] uppercase tracking-wider"><i class="fa-solid fa-sliders"></i> System Settings</h2>
+            
+            <div>
+                <label class="block text-gray-400 mb-1">Page Title / Name</label>
+                <input type="text" id="cfg-page-name" placeholder="Stock OTP Zone" class="w-full bg-[#181E25] border border-gray-800 rounded-xl p-3 text-white focus:outline-none focus:border-[#00A859]">
+            </div>
+
+            <div>
+                <label class="block text-gray-400 mb-1">VoltX API Key</label>
+                <input type="text" id="cfg-voltx-api" placeholder="MCB6YS8IE05" class="w-full bg-[#181E25] border border-gray-800 rounded-xl p-3 text-white focus:outline-none focus:border-[#00A859]">
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-gray-400 mb-1">Telegram Bot Token</label>
+                    <input type="text" id="cfg-bot-token" placeholder="8781596083:AAHUcAs..." class="w-full bg-[#181E25] border border-gray-800 rounded-xl p-3 text-white focus:outline-none focus:border-[#00A859]">
+                </div>
+                <div>
+                    <label class="block text-gray-400 mb-1">Forward Group ID</label>
+                    <input type="text" id="cfg-forward-group" placeholder="-1004429418333" class="w-full bg-[#181E25] border border-gray-800 rounded-xl p-3 text-white focus:outline-none focus:border-[#00A859]">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-gray-400 mb-1">Bot Button Link</label>
+                <input type="text" id="cfg-bot-button-link" placeholder="https://t.me/StockOTPForwardBoT/snzsms" class="w-full bg-[#181E25] border border-gray-800 rounded-xl p-3 text-white focus:outline-none focus:border-[#00A859]">
+            </div>
+        </div>
+
+        <button onclick="saveAllSettings()" id="save-btn" class="w-full bg-[#00A859] hover:bg-[#008f4b] text-white font-extrabold text-sm py-3.5 rounded-2xl transition shadow-xl flex items-center justify-center gap-2">
+            <i class="fa-solid fa-floppy-disk"></i>
+            <span>Save Configuration to Firebase</span>
+        </button>
+        <p id="msg-status" class="text-center font-mono text-xs text-emerald-400 mt-1"></p>
+    </div>
+
+    <script>
+        // ⚡ DYNAMIC FIREBASE AUTO-CONNECT FROM URL PARAMETER (?db=...)
+        const urlParams = new URLSearchParams(window.location.search);
+        const buyerDbUrl = urlParams.get('db') || "https://today-5adb0-default-rtdb.firebaseio.com";
+
+        if (!firebase.apps.length) {
+            firebase.initializeApp({ databaseURL: buyerDbUrl });
+        }
+        const db = firebase.database();
+
+        // Load Current Settings
+        db.ref("app_settings").on("value", snapshot => {
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                if (data.pageName) document.getElementById('cfg-page-name').value = data.pageName;
+                if (data.voltxApi) document.getElementById('cfg-voltx-api').value = data.voltxApi;
+                if (data.botToken) document.getElementById('cfg-bot-token').value = data.botToken;
+                if (data.forwardGroup) document.getElementById('cfg-forward-group').value = data.forwardGroup;
+                if (data.botButtonLink) document.getElementById('cfg-bot-button-link').value = data.botButtonLink;
+            }
+        });
+
+        function saveAllSettings() {
+            const btn = document.getElementById('save-btn');
+            btn.disabled = true;
+
+            const payload = {
+                pageName: document.getElementById('cfg-page-name').value.trim() || "Stock OTP Zone",
+                voltxApi: document.getElementById('cfg-voltx-api').value.trim() || "MCB6YS8IE05",
+                botToken: document.getElementById('cfg-bot-token').value.trim() || "8781596083:AAHUcAsNjkpOTW7bDwpSGWru7NrDLKZe_ms",
+                forwardGroup: document.getElementById('cfg-forward-group').value.trim() || "-1004429418333",
+                botButtonLink: document.getElementById('cfg-bot-button-link').value.trim() || "https://t.me/StockOTPForwardBoT/snzsms"
+            };
+
+            db.ref("app_settings").set(payload, (error) => {
+                btn.disabled = false;
+                const msg = document.getElementById('msg-status');
+                if (error) {
+                    msg.innerText = "❌ Save Failed: " + error.message;
+                    msg.className = "text-center font-mono text-xs text-red-400 mt-1";
+                } else {
+                    msg.innerText = "✅ Saved Successfully to Buyer Firebase!";
+                    msg.className = "text-center font-mono text-xs text-emerald-400 mt-1";
+                    setTimeout(() => msg.innerText = "", 3000);
+                }
+            });
+        }
+    </script>
+</body>
+</html>
