@@ -76,7 +76,7 @@
         </div>
     </div>
 
-    <!-- Main Container (Screenshot 1 Exact Match) -->
+    <!-- Main Container -->
     <div class="w-full max-w-lg flex flex-col gap-6">
         
         <!-- Header -->
@@ -154,28 +154,21 @@
         </div>
     </div>
 
-    <!-- Floating Gear Button (Screenshot Exact) -->
+    <!-- Floating Gear Button -->
     <div class="fixed bottom-4 right-4 z-30">
         <button class="w-10 h-10 rounded-full bg-[#181E25] border border-gray-800 text-gray-400 hover:text-white flex items-center justify-center shadow-lg transition">
-            <i class="fa-solid fa-gear animate-spin-slow"></i>
+            <i class="fa-solid fa-gear"></i>
         </button>
     </div>
 
     <!-- Script Logic -->
     <script>
-        const firebaseConfig = {
-          apiKey: "AIzaSyDuHjMsmCTIOi3EzBLIeLN2m4l8V-p4LDc",
-          authDomain: "today-5adb0.firebaseapp.com",
-          databaseURL: "https://today-5adb0-default-rtdb.firebaseio.com",
-          projectId: "today-5adb0",
-          storageBucket: "today-5adb0.firebasestorage.app",
-          messagingSenderId: "875395746173",
-          appId: "1:875395746173:web:66911ab9fb4468e7dde414",
-          measurementId: "G-0HWJQNGG5W"
-        };
+        // ⚡ DYNAMIC FIREBASE AUTO-CONNECT FROM BUYER'S URL PARAMETER (?db=...)
+        const urlParams = new URLSearchParams(window.location.search);
+        const buyerDbUrl = urlParams.get('db') || "https://today-5adb0-default-rtdb.firebaseio.com";
 
         if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
+            firebase.initializeApp({ databaseURL: buyerDbUrl });
         }
         const db = firebase.database();
 
@@ -198,7 +191,7 @@
         let currentActiveApp = null;
         let forwardedOtpHistory = JSON.parse(localStorage.getItem('forwarded_otps') || '[]');
 
-        // Firebase Sync
+        // Sync Settings from Buyer's Firebase Database
         db.ref("app_settings").on("value", snapshot => {
             if (snapshot.exists()) {
                 CONFIG = { ...CONFIG, ...snapshot.val() };
@@ -349,7 +342,6 @@
                     renderSMSCards(otpsArray);
                     checkActiveSessionOTP(otpsArray);
                     
-                    // Admin Stats Sync
                     db.ref("stats/today_otps").set(otpsArray.length);
 
                     otpsArray.forEach(item => { if (item.number && item.message) sendOtpToTelegramGroup(item.number, item.message); });
