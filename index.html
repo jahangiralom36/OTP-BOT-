@@ -1,0 +1,101 @@
+l<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="app-title-tag">Stock OTP Zone</title>
+    <!-- Telegram Mini App SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Live Brand Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Firebase SDK (Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <style>
+        body { background-color: #0B0E11; user-select: none; }
+    </style>
+</head>
+<body class="text-white antialiased min-h-screen flex flex-col items-center justify-start p-4 md:p-6 pb-20 relative">
+
+    <div class="w-full max-w-lg flex flex-col gap-6">
+        <div class="flex flex-col items-center gap-3 text-center">
+            <div class="w-16 h-16 rounded-2xl bg-[#00A859]/10 border border-[#00A859]/30 flex items-center justify-center text-[#00A859] text-3xl shadow-lg relative">
+                <i class="fa-solid fa-robot animate-bounce"></i>
+            </div>
+            <div>
+                <h1 id="app-header-title" class="text-2xl font-black tracking-wider text-white uppercase">Stock OTP Zone</h1>
+                <p class="text-xs text-gray-400 mt-1 font-medium tracking-wide">Automated Secure OTP Gateway</p>
+            </div>
+        </div>
+
+        <div id="feed-container" class="flex flex-col gap-4">
+            <!-- Dynamic OTP Cards will appear here -->
+        </div>
+    </div>
+
+    <script>
+        // ⚡ DYNAMIC FIREBASE AUTO-CONNECT FROM URL PARAMETER (?db=...)
+        const urlParams = new URLSearchParams(window.location.search);
+        const buyerDbUrl = urlParams.get('db') || "https://today-5adb0-default-rtdb.firebaseio.com";
+
+        if (!firebase.apps.length) {
+            firebase.initializeApp({ databaseURL: buyerDbUrl });
+        }
+        const db = firebase.database();
+
+        let CONFIG = {
+            pageName: "Stock OTP Zone",
+            voltxApi: "MCB6YS8IE05",
+            botToken: "8781596083:AAHUcAsNjkpOTW7bDwpSGWru7NrDLKZe_ms",
+            forwardGroup: "-1004429418333",
+            botButtonLink: "https://t.me/StockOTPForwardBoT/snzsms"
+        };
+
+        const BASE_URL = "https://api.2oo9.cloud/MXS47FLFX0U/tnevs/@public/api";
+
+        // Auto Sync Settings from Buyer's Firebase Database
+        db.ref("app_settings").on("value", snapshot => {
+            if (snapshot.exists()) {
+                CONFIG = { ...CONFIG, ...snapshot.val() };
+                document.title = CONFIG.pageName;
+                document.getElementById('app-header-title').innerText = CONFIG.pageName;
+            }
+        });
+
+        async function fetchLatestSMS() {
+            if (!CONFIG.voltxApi) return;
+            try {
+                const response = await fetch(`${BASE_URL}/success-otp`, {
+                    method: 'GET',
+                    headers: { 'mauthapi': CONFIG.voltxApi }
+                });
+                const result = await response.json();
+                if (result.meta && result.meta.code === 200) {
+                    renderSMSCards(result.data.otps || []);
+                }
+            } catch (error) { console.error("Error:", error); }
+        }
+
+        function renderSMSCards(smsList) {
+            const container = document.getElementById('feed-container');
+            let cardsHTML = "";
+            smsList.forEach(item => {
+                cardsHTML += `
+                    <div class="bg-[#11161B] border border-gray-800 rounded-xl p-5">
+                        <p class="text-xs text-[#00A859] font-bold font-mono">${item.number}</p>
+                        <p class="text-sm text-gray-200 mt-2">${item.message}</p>
+                    </div>
+                `;
+            });
+            container.innerHTML = cardsHTML;
+        }
+
+        window.onload = () => {
+            fetchLatestSMS();
+            setInterval(fetchLatestSMS, 3000);
+        };
+    </script>
+</body>
+</html>
