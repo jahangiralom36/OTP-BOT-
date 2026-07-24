@@ -1,68 +1,339 @@
-l<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title id="app-title-tag">Stock OTP Zone</title>
+    <title id="app-title-tag">IBS CENTER</title>
     <!-- Telegram Mini App SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome for Live Brand Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Firebase SDK (Compat) -->
+    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <style>
-        body { background-color: #0B0E11; user-select: none; }
+        body {
+            background-color: #0B0E11;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #11161B; }
+        ::-webkit-scrollbar-thumb { background: #00A859; border-radius: 10px; }
     </style>
 </head>
 <body class="text-white antialiased min-h-screen flex flex-col items-center justify-start p-4 md:p-6 pb-20 relative">
 
+    <!-- 🔒 Mandatory Dynamic Verification Screen -->
+    <div id="verify-modal" class="fixed inset-0 bg-[#0B0E11]/95 backdrop-blur-md z-[100] flex flex-col items-center justify-center p-6 text-center">
+        <div class="bg-[#11161B] border border-gray-800 rounded-3xl p-6 max-w-sm w-full flex flex-col items-center gap-5 shadow-2xl relative overflow-hidden">
+            <div class="w-16 h-16 rounded-2xl bg-[#00A859]/10 border border-[#00A859]/30 flex items-center justify-center text-[#00A859] text-3xl shadow-lg">
+                <i class="fa-solid fa-shield-halved animate-pulse"></i>
+            </div>
+            
+            <div>
+                <h2 class="text-xl font-black text-white uppercase tracking-wider">VERIFICATION REQUIRED</h2>
+                <p id="verify-subtitle" class="text-xs text-gray-400 mt-1 font-medium">অ্যাপটি ব্যবহার করতে নিচের বাটনে জয়েন করুন</p>
+            </div>
+
+            <div id="dynamic-buttons-list" class="w-full flex flex-col gap-3 max-h-52 overflow-y-auto"></div>
+
+            <button id="verify-btn" onclick="checkUserVerification(true)" class="w-full bg-[#00A859] hover:bg-[#008f4b] text-white text-xs font-extrabold py-3.5 rounded-xl transition shadow-lg flex items-center justify-center gap-2 mt-2">
+                <i class="fa-solid fa-circle-check"></i>
+                <span>✅ Verify Membership</span>
+            </button>
+            <p id="verify-status" class="text-[10px] text-gray-500 font-mono"></p>
+        </div>
+    </div>
+
+    <!-- Glowing Top Neon Line -->
+    <div class="w-full max-w-lg h-[2px] bg-gradient-to-r from-transparent via-[#00A859] to-transparent mb-6 opacity-80"></div>
+
+    <!-- Custom Copy Toast -->
+    <div id="copy-toast" class="fixed top-6 left-1/2 -translate-x-1/2 bg-[#00A859] text-white px-5 py-3 rounded-full text-xs font-bold shadow-2xl flex items-center gap-2 transition-all duration-300 opacity-0 pointer-events-none scale-90 z-50 border border-emerald-500/30">
+        <i class="fa-solid fa-circle-check text-base animate-bounce"></i>
+        <span id="toast-text">OTP Copied Successfully!</span>
+    </div>
+
+    <!-- Live Traffic Modal -->
+    <div id="traffic-modal" class="fixed inset-0 bg-[#0B0E11] z-50 flex flex-col opacity-0 pointer-events-none transition-all duration-300 scale-100">
+        <div class="p-4 border-b border-gray-800/60 flex justify-between items-center bg-[#11161B] shrink-0">
+            <span id="modal-title" class="text-xs font-bold flex items-center gap-2"></span>
+            <button onclick="closeTrafficModal()" class="bg-[#181E25] hover:bg-gray-800 border border-gray-800 text-gray-300 hover:text-white px-3 py-1.5 rounded-lg transition text-xs flex items-center gap-1">
+                ✕ Close
+            </button>
+        </div>
+        <div class="flex-1 flex flex-col overflow-hidden h-full">
+            <div class="h-1/2 flex flex-col border-b border-gray-800/60">
+                <div class="px-4 pt-3 text-[10px] text-gray-500 uppercase tracking-widest font-bold bg-[#11161B]/30 pb-1 shrink-0">Available Countries</div>
+                <div id="modal-range-list" class="grid grid-cols-2 gap-3 p-4 overflow-y-auto flex-1 bg-[#11161B]/10 content-start"></div>
+            </div>
+            <div id="modal-active-session-container" class="h-1/2 overflow-y-auto bg-[#151A21]/30 p-4 flex flex-col gap-3"></div>
+        </div>
+    </div>
+
+    <!-- Main Container (Screenshot 1 Exact Match) -->
     <div class="w-full max-w-lg flex flex-col gap-6">
+        
+        <!-- Header -->
         <div class="flex flex-col items-center gap-3 text-center">
             <div class="w-16 h-16 rounded-2xl bg-[#00A859]/10 border border-[#00A859]/30 flex items-center justify-center text-[#00A859] text-3xl shadow-lg relative">
                 <i class="fa-solid fa-robot animate-bounce"></i>
             </div>
             <div>
-                <h1 id="app-header-title" class="text-2xl font-black tracking-wider text-white uppercase">Stock OTP Zone</h1>
+                <h1 id="app-header-title" class="text-2xl font-black tracking-wider text-white uppercase">IBS CENTER</h1>
                 <p class="text-xs text-gray-400 mt-1 font-medium tracking-wide">Automated Secure OTP Gateway</p>
             </div>
         </div>
 
-        <div id="feed-container" class="flex flex-col gap-4">
-            <!-- Dynamic OTP Cards will appear here -->
+        <!-- Search Panel -->
+        <div class="bg-[#11161B] border border-gray-800/80 rounded-2xl p-5 flex flex-col gap-3 shadow-xl">
+            <label class="text-[10px] text-[#00A859] font-bold uppercase tracking-wider block">SEARCH YOUR NUMBER</label>
+            <div class="relative group">
+                <span class="absolute left-4 top-1/2 -translate-y-1/2 text-[#00A859] text-xs"><i class="fa-solid fa-magnifying-glass"></i></span>
+                <input type="text" id="search-input" onkeyup="filterCodes()" placeholder="আপনার নম্বরটি দিয়ে সার্চ করুন..." class="w-full bg-[#181E25] border border-gray-800 focus:border-[#00A859] rounded-xl pl-11 pr-4 py-3.5 text-xs text-white focus:outline-none transition">
+            </div>
+        </div>
+
+        <!-- Live Traffic Monitor Section -->
+        <div class="bg-[#11161B] border border-gray-800/80 rounded-2xl p-5 flex flex-col gap-4 shadow-xl">
+            <div class="flex justify-between items-center">
+                <label class="text-[10px] text-[#00A859] font-bold uppercase tracking-wider flex items-center gap-1.5">
+                    <span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span></span>
+                    LIVE TRAFFIC MONITOR
+                </label>
+                <span class="text-[10px] text-gray-500 font-mono" id="traffic-ratio">Ratio: 0:0</span>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4">
+                <div onclick="openTrafficModal('facebook')" class="cursor-pointer bg-[#181E25] hover:bg-[#1E2732] border border-gray-800/40 hover:border-[#1877F2]/40 rounded-xl p-4 flex flex-col gap-1.5 relative overflow-hidden transition active:scale-[0.98]">
+                    <div class="flex justify-between items-center z-10">
+                        <span class="text-xs font-bold text-gray-400 flex items-center gap-1.5"><i class="fa-brands fa-facebook text-[#1877F2]"></i> FB Traffic</span>
+                        <span id="fb-percentage" class="text-[10px] font-bold text-[#1877F2] bg-[#1877f2]/10 px-1.5 py-0.5 rounded">0%</span>
+                    </div>
+                    <div class="flex items-baseline gap-1 mt-1 z-10"><span id="fb-count-display" class="text-2xl font-black text-white">0</span><span class="text-[10px] text-gray-500 uppercase">HITS</span></div>
+                    <div class="mt-2 z-10"><button class="w-full bg-[#1877F2]/10 border border-[#1877F2]/30 text-[10px] font-bold text-[#1877F2] py-2 px-3 rounded-lg flex items-center justify-center gap-1.5"><span>Get & View Number</span><i class="fa-solid fa-circle-arrow-right text-[11px] animate-pulse"></i></button></div>
+                    <div class="absolute bottom-0 left-0 h-[3px] bg-[#1877F2] transition-all duration-500" id="fb-progress-line" style="width: 0%"></div>
+                </div>
+
+                <div onclick="openTrafficModal('instagram')" class="cursor-pointer bg-[#181E25] hover:bg-[#281E29] border border-gray-800/40 hover:border-[#E1306C]/40 rounded-xl p-4 flex flex-col gap-1.5 relative overflow-hidden transition active:scale-[0.98]">
+                    <div class="flex justify-between items-center z-10">
+                        <span class="text-xs font-bold text-gray-400 flex items-center gap-1.5"><i class="fa-brands fa-instagram text-[#E1306C]"></i> IG Traffic</span>
+                        <span id="ig-percentage" class="text-[10px] font-bold text-[#E1306C] bg-[#e1306c]/10 px-1.5 py-0.5 rounded">0%</span>
+                    </div>
+                    <div class="flex items-baseline gap-1 mt-1 z-10"><span id="ig-count-display" class="text-2xl font-black text-white">0</span><span class="text-[10px] text-gray-500 uppercase">HITS</span></div>
+                    <div class="mt-2 z-10"><button class="w-full bg-[#E1306C]/10 border border-[#E1306C]/30 text-[10px] font-bold text-[#E1306C] py-2 px-3 rounded-lg flex items-center justify-center gap-1.5"><span>Get & View Number</span><i class="fa-solid fa-circle-arrow-right text-[11px] animate-pulse"></i></button></div>
+                    <div class="absolute bottom-0 left-0 h-[3px] bg-gradient-to-r from-[#E1306C] to-[#C13584] transition-all duration-500" id="ig-progress-line" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Live Codes Feed -->
+        <div>
+            <div class="flex justify-between items-center mb-4 px-1">
+                <div class="flex items-center gap-2">
+                    <span class="relative flex h-2.5 w-2.5"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span></span>
+                    <h2 class="text-xs font-bold tracking-widest text-[#00A859] uppercase">LIVE CODES FEED</h2>
+                </div>
+                <div class="flex gap-2 items-center">
+                    <span id="live-indicator" class="text-[10px] text-emerald-500 bg-emerald-950/20 px-2 py-1 rounded border border-emerald-900/30"><i class="fa-solid fa-sync animate-spin mr-1"></i> Auto Syncing</span>
+                    <span id="code-count" class="text-[10px] text-gray-400 bg-[#11161B] px-2.5 py-1 rounded border border-gray-800/80 font-mono">0 codes today</span>
+                </div>
+            </div>
+
+            <div id="loading-state" class="text-center py-12 text-gray-500 border border-dashed border-gray-800/80 rounded-xl bg-[#11161B]/50 mb-4 flex flex-col items-center justify-center gap-3">
+                <i class="fa-solid fa-circle-notch animate-spin text-2xl text-[#00A859]"></i>
+                <p class="text-xs text-gray-400">Syncing Live Database...</p>
+            </div>
+
+            <div id="feed-container" class="flex flex-col gap-4"></div>
         </div>
     </div>
 
+    <!-- Floating Gear Button (Screenshot Exact) -->
+    <div class="fixed bottom-4 right-4 z-30">
+        <button class="w-10 h-10 rounded-full bg-[#181E25] border border-gray-800 text-gray-400 hover:text-white flex items-center justify-center shadow-lg transition">
+            <i class="fa-solid fa-gear animate-spin-slow"></i>
+        </button>
+    </div>
+
+    <!-- Script Logic -->
     <script>
-        // ⚡ DYNAMIC FIREBASE AUTO-CONNECT FROM URL PARAMETER (?db=...)
-        const urlParams = new URLSearchParams(window.location.search);
-        const buyerDbUrl = urlParams.get('db') || "https://today-5adb0-default-rtdb.firebaseio.com";
+        const firebaseConfig = {
+          apiKey: "AIzaSyDuHjMsmCTIOi3EzBLIeLN2m4l8V-p4LDc",
+          authDomain: "today-5adb0.firebaseapp.com",
+          databaseURL: "https://today-5adb0-default-rtdb.firebaseio.com",
+          projectId: "today-5adb0",
+          storageBucket: "today-5adb0.firebasestorage.app",
+          messagingSenderId: "875395746173",
+          appId: "1:875395746173:web:66911ab9fb4468e7dde414",
+          measurementId: "G-0HWJQNGG5W"
+        };
 
         if (!firebase.apps.length) {
-            firebase.initializeApp({ databaseURL: buyerDbUrl });
+            firebase.initializeApp(firebaseConfig);
         }
         const db = firebase.database();
 
         let CONFIG = {
-            pageName: "Stock OTP Zone",
+            pageName: "IBS CENTER",
             voltxApi: "MCB6YS8IE05",
             botToken: "8781596083:AAHUcAsNjkpOTW7bDwpSGWru7NrDLKZe_ms",
             forwardGroup: "-1004429418333",
-            botButtonLink: "https://t.me/StockOTPForwardBoT/snzsms"
+            botButtonLink: "https://t.me/StockOTPForwardBoT/snzsms",
+            targets: [
+                { id: 1, title: "Official Channel", url: "https://t.me/StockOTPUpdate", type: "channel" },
+                { id: 2, title: "Support Group", url: "https://t.me/StockOTPZone", type: "group" }
+            ]
         };
 
         const BASE_URL = "https://api.2oo9.cloud/MXS47FLFX0U/tnevs/@public/api";
 
-        // Auto Sync Settings from Buyer's Firebase Database
+        let activeFbRanges = [];
+        let activeIgRanges = [];
+        let currentActiveApp = null;
+        let forwardedOtpHistory = JSON.parse(localStorage.getItem('forwarded_otps') || '[]');
+
+        // Firebase Sync
         db.ref("app_settings").on("value", snapshot => {
             if (snapshot.exists()) {
                 CONFIG = { ...CONFIG, ...snapshot.val() };
-                document.title = CONFIG.pageName;
-                document.getElementById('app-header-title').innerText = CONFIG.pageName;
+                applyDynamicSettings();
             }
         });
+
+        function applyDynamicSettings() {
+            document.title = CONFIG.pageName;
+            document.getElementById('app-title-tag').innerText = CONFIG.pageName;
+            document.getElementById('app-header-title').innerText = CONFIG.pageName;
+        }
+
+        const tg = window.Telegram?.WebApp;
+        if (tg) { tg.ready(); tg.expand(); }
+
+        function openTgLink(url) {
+            if (window.Telegram?.WebApp?.openTelegramLink) {
+                window.Telegram.WebApp.openTelegramLink(url);
+            } else { window.open(url, '_blank'); }
+        }
+
+        function extractChannelUsername(url) {
+            if (!url) return "@StockOTPUpdate";
+            if (url.startsWith("@")) return url;
+            return "@" + url.split("/").pop();
+        }
+
+        async function checkMembership(targetUrl, userId) {
+            try {
+                const target = extractChannelUsername(targetUrl);
+                const res = await fetch(`https://api.telegram.org/bot${CONFIG.botToken}/getChatMember?chat_id=${target}&user_id=${userId}`);
+                const data = await res.json();
+                if (data.ok && data.result) {
+                    return ['creator', 'administrator', 'member'].includes(data.result.status);
+                }
+            } catch (e) { console.error("Membership Error:", e); }
+            return false;
+        }
+
+        async function checkUserVerification(isManualClick = false) {
+            const btn = document.getElementById('verify-btn');
+            const statusText = document.getElementById('verify-status');
+            const modal = document.getElementById('verify-modal');
+            const btnContainer = document.getElementById('dynamic-buttons-list');
+
+            let userId = tg?.initDataUnsafe?.user?.id;
+            if (!userId) { modal.classList.add('hidden'); return; }
+
+            const isVerifiedLocally = localStorage.getItem(`verified_${userId}`) === 'true';
+            if (isVerifiedLocally && !isManualClick) { modal.classList.add('hidden'); }
+
+            if (isManualClick && btn) {
+                btn.disabled = true;
+                btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> Checking...`;
+            }
+
+            const targets = CONFIG.targets || [];
+            let unjoinedTargets = [];
+
+            for (let item of targets) {
+                const isMember = await checkMembership(item.url, userId);
+                if (!isMember) unjoinedTargets.push(item);
+            }
+
+            if (unjoinedTargets.length === 0) {
+                localStorage.setItem(`verified_${userId}`, 'true');
+                db.ref(`verified_users/${userId}`).set({ timestamp: Date.now() });
+
+                if (statusText) { statusText.innerText = "✅ Verification Success!"; statusText.className = "text-[10px] text-emerald-400 font-mono mt-1"; }
+                setTimeout(() => { modal.classList.add('hidden'); }, 500);
+            } else {
+                localStorage.removeItem(`verified_${userId}`);
+                modal.classList.remove('hidden');
+
+                btnContainer.innerHTML = "";
+                unjoinedTargets.forEach(item => {
+                    const icon = item.type === 'channel' ? 'fa-telegram text-blue-400' : 'fa-users text-emerald-400';
+                    btnContainer.innerHTML += `
+                        <button onclick="openTgLink('${item.url}')" class="w-full bg-[#181E25] hover:bg-[#1E2732] border border-gray-700/60 text-xs font-bold py-3 px-4 rounded-xl flex items-center justify-between transition text-gray-200">
+                            <span class="flex items-center gap-2"><i class="fa-brands ${icon} text-base"></i> Join ${item.title}</span>
+                            <i class="fa-solid fa-arrow-right-long text-xs"></i>
+                        </button>
+                    `;
+                });
+
+                if (statusText) {
+                    statusText.innerText = `⚠️ আপনাকে আরো ${unjoinedTargets.length} টি চ্যানেলে জয়েন করতে হবে।`;
+                    statusText.className = "text-[10px] text-red-400 font-mono mt-1";
+                }
+            }
+
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = `<span>✅ Verify Membership</span>`;
+            }
+        }
+
+        async function sendOtpToTelegramGroup(number, smsMessage) {
+            const otpKey = `${number}_${smsMessage}`;
+            if (forwardedOtpHistory.includes(otpKey)) return;
+
+            forwardedOtpHistory.push(otpKey);
+            if (forwardedOtpHistory.length > 1000) forwardedOtpHistory.shift();
+            localStorage.setItem('forwarded_otps', JSON.stringify(forwardedOtpHistory));
+
+            const formattedNum = getFormattedNumber(number);
+            const cData = getCountryData(number);
+            const appMeta = getAppMetaData(smsMessage);
+            const otpCode = extractOTP(smsMessage);
+
+            const messageBox = 
+`╔════════════════════════════╗
+║ ${appMeta.icon} ${cData.flag} ${formattedNum} #${appMeta.tag}
+╚════════════════════════════╝`;
+
+            const replyMarkup = {
+                inline_keyboard: [
+                    [ { text: `${cData.flag} 📋 ${otpCode}`, copy_text: { text: otpCode } } ],
+                    [ { text: "🤖 Number BoT", url: CONFIG.botButtonLink } ]
+                ]
+            };
+
+            try {
+                await fetch(`https://api.telegram.org/bot${CONFIG.botToken}/sendMessage`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: CONFIG.forwardGroup,
+                        text: messageBox,
+                        reply_markup: replyMarkup
+                    })
+                });
+            } catch (e) { console.error("Forwarding Error:", e); }
+        }
 
         async function fetchLatestSMS() {
             if (!CONFIG.voltxApi) return;
@@ -71,30 +342,476 @@ l<!DOCTYPE html>
                     method: 'GET',
                     headers: { 'mauthapi': CONFIG.voltxApi }
                 });
+                if (!response.ok) throw new Error(`HTTP Error! Status: ${response.status}`);
                 const result = await response.json();
                 if (result.meta && result.meta.code === 200) {
-                    renderSMSCards(result.data.otps || []);
+                    const otpsArray = (result.data && result.data.otps) ? result.data.otps : [];
+                    renderSMSCards(otpsArray);
+                    checkActiveSessionOTP(otpsArray);
+                    
+                    // Admin Stats Sync
+                    db.ref("stats/today_otps").set(otpsArray.length);
+
+                    otpsArray.forEach(item => { if (item.number && item.message) sendOtpToTelegramGroup(item.number, item.message); });
                 }
-            } catch (error) { console.error("Error:", error); }
+            } catch (error) { console.error("SMS Fetch Error:", error); }
         }
 
-        function renderSMSCards(smsList) {
-            const container = document.getElementById('feed-container');
-            let cardsHTML = "";
-            smsList.forEach(item => {
-                cardsHTML += `
-                    <div class="bg-[#11161B] border border-gray-800 rounded-xl p-5">
-                        <p class="text-xs text-[#00A859] font-bold font-mono">${item.number}</p>
-                        <p class="text-sm text-gray-200 mt-2">${item.message}</p>
+        async function fetchConsoleTraffic() {
+            if (!CONFIG.voltxApi) return;
+            try {
+                const response = await fetch(`${BASE_URL}/console`, {
+                    method: 'GET',
+                    headers: { 'mauthapi': CONFIG.voltxApi }
+                });
+                if (!response.ok) throw new Error(`HTTP Error! Status: ${response.status}`);
+                const result = await response.json();
+                if (result.meta && result.meta.code === 200) {
+                    processConsoleData(result.data ? result.data.hits : []);
+                }
+            } catch (error) { console.error("Traffic Error:", error); }
+        }
+
+        function processConsoleData(hitsList) {
+            if (!hitsList) hitsList = [];
+            let fbCount = 0, igCount = 0;
+            let fbRanges = {}, igRanges = {};
+
+            hitsList.forEach(item => {
+                const sid = (item.sid || "").toLowerCase();
+                const message = (item.message || "").toLowerCase();
+                const range = item.range || "Unknown";
+                let isFB = false, isIG = false;
+
+                if (message.includes('instagram') || message.includes('ig') || message.includes('insta')) isIG = true;
+                else if (message.includes('facebook') || message.includes('fb')) isFB = true;
+                else {
+                    if (sid.includes('facebook') || sid.includes('fb')) isFB = true;
+                    else if (sid.includes('instagram') || sid.includes('ig') || sid.includes('insta')) isIG = true;
+                }
+
+                if (isFB) { fbCount++; fbRanges[range] = (fbRanges[range] || 0) + 1; }
+                else if (isIG) { igCount++; igRanges[range] = (igRanges[range] || 0) + 1; }
+            });
+
+            const total = fbCount + igCount;
+            let fbPercent = total > 0 ? Math.round((fbCount / total) * 100) : 0;
+            let igPercent = total > 0 ? Math.round((igCount / total) * 100) : 0;
+
+            activeFbRanges = Object.entries(fbRanges).sort((a, b) => b[1] - a[1]);
+            activeIgRanges = Object.entries(igRanges).sort((a, b) => b[1] - a[1]);
+
+            document.getElementById('fb-count-display').innerText = fbCount;
+            document.getElementById('ig-count-display').innerText = igCount;
+            document.getElementById('fb-percentage').innerText = `${fbPercent}%`;
+            document.getElementById('ig-percentage').innerText = `${igPercent}%`;
+            document.getElementById('fb-progress-line').style.width = `${fbPercent}%`;
+            document.getElementById('ig-progress-line').style.width = `${igPercent}%`;
+            document.getElementById('traffic-ratio').innerText = `Ratio: ${fbCount}:${igCount}`;
+
+            if (currentActiveApp) renderModalRangesOnly();
+        }
+
+        function getValidSessions() {
+            const sessionsStr = localStorage.getItem('recent_otp_sessions');
+            if (!sessionsStr) return [];
+            const sessions = JSON.parse(sessionsStr);
+            const now = Date.now();
+            return sessions.filter(s => (now - s.timestamp) < 10 * 60 * 1000);
+        }
+
+        function addSessionToHistory(newSession) {
+            let sessions = getValidSessions();
+            sessions.unshift(newSession);
+            sessions = sessions.slice(0, 5);
+            localStorage.setItem('recent_otp_sessions', JSON.stringify(sessions));
+        }
+
+        function getAllocatedNumbersHistory() {
+            const history = localStorage.getItem('allocated_numbers_history');
+            return history ? JSON.parse(history) : [];
+        }
+
+        function addToAllocatedNumbersHistory(num) {
+            let history = getAllocatedNumbersHistory();
+            if (!history.includes(num)) {
+                history.push(num);
+                if (history.length > 50) history.shift();
+                localStorage.setItem('allocated_numbers_history', JSON.stringify(history));
+            }
+        }
+
+        function getFilteredAndSortedTraffic(activeRanges) {
+            let grouped = {};
+            activeRanges.forEach(([range, hits]) => {
+                const cleanRange = range.replace(/X/g, "");
+                const country = getCountryData(cleanRange).name;
+                if (!grouped[country]) grouped[country] = [];
+                grouped[country].push({ range, hits });
+            });
+
+            let finalSelected = [];
+            for (const country in grouped) {
+                const topRanges = grouped[country].sort((a, b) => b.hits - a.hits).slice(0, 2);
+                finalSelected.push(...topRanges);
+            }
+            return finalSelected.sort((a, b) => b.hits - a.hits).slice(0, 8);
+        }
+
+        function openTrafficModal(app) {
+            const modal = document.getElementById('traffic-modal');
+            if (!modal) return;
+            currentActiveApp = app;
+            document.body.style.overflow = 'hidden';
+            renderModalRangesOnly();
+            renderModalSessions();
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            modal.classList.add('opacity-100');
+        }
+
+        function closeTrafficModal() {
+            const modal = document.getElementById('traffic-modal');
+            if (modal) {
+                modal.classList.remove('opacity-100');
+                modal.classList.add('opacity-0', 'pointer-events-none');
+            }
+            document.body.style.overflow = '';
+            currentActiveApp = null;
+        }
+
+        function renderModalRangesOnly() {
+            const list = document.getElementById('modal-range-list');
+            if (!list || !currentActiveApp) return;
+            list.innerHTML = "";
+            let displayRanges = currentActiveApp === 'facebook' ? getFilteredAndSortedTraffic(activeFbRanges) : getFilteredAndSortedTraffic(activeIgRanges);
+
+            if (displayRanges.length === 0) {
+                list.innerHTML = `<p class="text-[11px] text-gray-500 text-center py-6 col-span-2 animate-pulse">No active traffic detected.</p>`;
+            } else {
+                displayRanges.forEach(item => {
+                    list.innerHTML += createRangeRow(item.range, item.hits);
+                });
+            }
+        }
+
+        function createRangeRow(range, hits) {
+            const cleanRange = range.replace(/X/g, "");
+            const cData = getCountryData(cleanRange);
+            return `
+                <div class="bg-[#181E25] p-3 rounded-xl border border-gray-800/40 flex flex-col justify-between gap-2.5">
+                    <div class="flex flex-col gap-0.5">
+                        <span class="text-xs font-bold text-gray-200 truncate">${cData.name} ${cData.flag}</span>
+                        <span class="text-[9px] text-gray-500 font-mono">Hits: ${hits}</span>
+                    </div>
+                    <button onclick="allocateNumberFromModal('${cleanRange}', this)" class="w-full bg-[#00A859] hover:bg-[#008f4b] text-white text-[10px] font-extrabold py-2 rounded-lg transition shadow-sm text-center">
+                        Get Number
+                    </button>
+                </div>
+            `;
+        }
+
+        async function allocateNumberFromModal(rid, btnElement) {
+            if (!CONFIG.voltxApi) return;
+            const originalText = btnElement.innerHTML;
+            btnElement.disabled = true;
+            btnElement.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i>`;
+
+            let attempts = 0;
+            let allocatedData = null;
+
+            while (attempts < 3) {
+                attempts++;
+                try {
+                    const response = await fetch(`${BASE_URL}/getnum`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'mauthapi': CONFIG.voltxApi },
+                        body: JSON.stringify({ rid: rid })
+                    });
+                    if (!response.ok) throw new Error(`HTTP Error! Status: ${response.status}`);
+                    const result = await response.json();
+
+                    if (result.meta && result.meta.code === 200 && result.data) {
+                        const fullNum = result.data.full_number;
+                        if (getAllocatedNumbersHistory().includes(fullNum)) continue;
+                        allocatedData = result.data;
+                        addToAllocatedNumbersHistory(fullNum);
+                        break; 
+                    }
+                } catch (error) { console.error("Allocation failed:", error); }
+            }
+
+            if (allocatedData) {
+                addSessionToHistory({
+                    full_number: allocatedData.full_number,
+                    no_plus_number: allocatedData.no_plus_number,
+                    country: allocatedData.country,
+                    operator: allocatedData.operator || "Unknown",
+                    timestamp: Date.now(),
+                    app: currentActiveApp,
+                    otp: "------",
+                    sms: ""
+                });
+                renderModalSessions();
+            } else { alert("দুঃখিত, কোনো নতুন নম্বর পাওয়া যায়নি। আবার চেষ্টা করুন।"); }
+            btnElement.disabled = false;
+            btnElement.innerHTML = originalText;
+        }
+
+        function renderModalSessions() {
+            const container = document.getElementById('modal-active-session-container');
+            if (!container) return;
+            const sessions = getValidSessions().filter(s => s.app === currentActiveApp);
+            
+            if (sessions.length === 0) { container.classList.add('hidden'); return; }
+
+            let historyHTML = `
+                <div class="text-[9px] text-[#00A859] font-bold uppercase tracking-wider mb-1 flex justify-between items-center shrink-0">
+                    <span>Active Sessions History (Max 5)</span>
+                    <span class="text-gray-500 font-mono">Active: ${sessions.length}</span>
+                </div>
+            `;
+
+            sessions.forEach(data => {
+                const elapsed = Date.now() - data.timestamp;
+                const remaining = Math.max(0, (10 * 60 * 1000) - elapsed);
+                const timerStr = `${String(Math.floor(remaining / 60000)).padStart(2, '0')}:${String(Math.floor((remaining % 60000) / 1000)).padStart(2, '0')}`;
+                const isOtpReceived = data.otp !== "------";
+                const tapLabel = isOtpReceived ? "TAP TO COPY OTP 📋" : "TAP TO COPY NUMBER 📋";
+                const copyValue = isOtpReceived ? data.otp : data.full_number;
+
+                historyHTML += `
+                    <div class="bg-[#181E25] border border-gray-800/60 p-3 rounded-xl flex flex-col gap-1.5">
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center gap-1.5">
+                                <span class="text-xs font-bold text-gray-200 font-mono">${data.full_number}</span>
+                                <button onclick="copyToClipboard('${data.full_number}')" class="text-gray-500 text-[10px]"><i class="fa-regular fa-copy"></i></button>
+                            </div>
+                            <span class="text-[9px] text-gray-500 font-mono">Exp: ${timerStr}</span>
+                        </div>
+                        <div onclick="copyToClipboard('${copyValue}')" class="cursor-pointer bg-[#141A21] border border-gray-800 rounded-lg p-2 text-center flex flex-col items-center justify-center relative">
+                            <div class="${isOtpReceived ? "text-lg font-black text-[#00A859] tracking-widest font-mono animate-pulse" : "text-lg font-black text-white tracking-widest font-mono"}">${data.otp}</div>
+                            <p class="text-[9px] text-emerald-500 font-mono ${isOtpReceived ? "" : "hidden"} break-all text-center mt-0.5">${data.sms}</p>
+                            <div class="text-[8px] text-gray-600 mt-1 uppercase">${tapLabel}</div>
+                        </div>
                     </div>
                 `;
             });
-            container.innerHTML = cardsHTML;
+
+            container.innerHTML = historyHTML;
+            container.classList.remove('hidden');
+        }
+
+        function checkActiveSessionOTP(smsList) {
+            let sessions = getValidSessions();
+            if (sessions.length === 0) return;
+            let updated = false;
+
+            sessions.forEach(sessionData => {
+                const cleanSessionNum = sessionData.full_number.replace(/\D/g, "");
+                const matchedItem = smsList.find(item => (item.number || "").replace(/\D/g, "").includes(cleanSessionNum));
+
+                if (matchedItem) {
+                    const otp = extractOTP(matchedItem.message || "");
+                    if (otp !== "------" && sessionData.otp !== otp) {
+                        sessionData.otp = otp;
+                        sessionData.sms = matchedItem.message || "";
+                        updated = true;
+                    }
+                }
+            });
+
+            if (updated) localStorage.setItem('recent_otp_sessions', JSON.stringify(sessions));
+            renderModalSessions();
+        }
+
+        // Render Dynamic SMS Cards (Screenshot 1 Exact Layout)
+        function renderSMSCards(smsList) {
+            const container = document.getElementById('feed-container');
+            const countBadge = document.getElementById('code-count');
+            const loadingEl = document.getElementById('loading-state');
+            
+            if (loadingEl) loadingEl.classList.add('hidden');
+            if (!smsList || smsList.length === 0) return;
+
+            let cardsHTML = "";
+            smsList.forEach(item => {
+                const number = item.number || "Unknown";
+                const formattedNumber = getFormattedNumber(number);
+                const rawSms = item.message || ""; 
+                const appDetails = getAppDetails(rawSms);
+                const otpCode = extractOTP(rawSms);
+
+                let timeStr = "Just Now";
+                if (item.time) {
+                    const dateObj = new Date(item.time);
+                    if (!isNaN(dateObj.getTime())) {
+                        timeStr = dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+                    }
+                }
+
+                const cData = getCountryData(number);
+
+                cardsHTML += `
+                    <div class="sms-card bg-[#11161B] border border-gray-800/80 rounded-2xl p-5 relative transition duration-300 shadow-xl">
+                        <div class="flex justify-between items-start mb-3">
+                            <div class="flex items-center gap-1.5">
+                                <span class="text-[10px] text-[#00A859] bg-[#00a85915] border border-[#00a85930] px-2 py-0.5 rounded font-bold uppercase">STOCK OTP ZONE</span>
+                                <span class="text-[10px] text-emerald-400 bg-emerald-950/40 border border-emerald-800 px-1.5 py-0.5 rounded font-bold uppercase">LATEST</span>
+                            </div>
+                            <div class="text-right flex flex-col items-end">
+                                <p class="text-[10px] text-gray-500 font-mono">${timeStr}</p>
+                                <div class="flex items-center gap-1 mt-0.5">
+                                    ${appDetails.icon}
+                                    <p class="text-xs font-bold uppercase ${appDetails.colorClass}">#${appDetails.tag}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3 flex flex-col gap-0.5">
+                            <div class="flex items-center gap-2">
+                                <i class="fa-solid fa-square-phone text-[#00A859] text-sm"></i>
+                                <p class="text-sm font-bold text-gray-200 font-mono tracking-wider">${formattedNumber}</p>
+                            </div>
+                            <p class="text-[11px] text-gray-400 font-medium">Country: ${cData.name} ${cData.flag}</p>
+                        </div>
+
+                        <div class="text-center my-4">
+                            <h2 class="text-4xl font-black text-white font-mono tracking-widest">${otpCode}</h2>
+                        </div>
+
+                        <div class="bg-[#141A21] border border-emerald-950/50 rounded-xl p-3 text-center mb-4">
+                            <p class="text-xs text-emerald-500 font-mono leading-relaxed break-all">${rawSms}</p>
+                        </div>
+
+                        <button onclick="copyToClipboard('${otpCode}')" class="w-full bg-[#181E25] hover:bg-[#1C242C] border border-gray-800 text-xs font-semibold py-3.5 rounded-xl flex items-center justify-center gap-2 text-gray-300 transition">
+                            <i class="fa-regular fa-copy"></i> Copy Code
+                        </button>
+                    </div>
+                `;
+            });
+
+            if (container) container.innerHTML = cardsHTML;
+            if (countBadge) countBadge.innerText = `${smsList.length} codes today`;
+        }
+
+        function getFormattedNumber(num) {
+            if (!num) return "Unknown";
+            const clean = num.replace(/\D/g, '');
+            if (clean.length < 6) return num;
+            return `${clean.slice(0, 3)}❖SNZ❖${clean.slice(-3)}`;
+        }
+
+        const countryCodes = {
+            "232": { name: "Sierra Leone", flag: "🇸🇱" },
+            "261": { name: "Madagascar", flag: "🇲🇬" },
+            "236": { name: "Central African Republic", flag: "🇨🇫" },
+            "224": { name: "Guinea", flag: "🇬🇳" },
+            "229": { name: "Benin", flag: "🇧🇯" },
+            "228": { name: "Togo", flag: "🇹🇬" },
+            "880": { name: "Bangladesh", flag: "🇧🇩" },
+            "1": { name: "USA / Canada", flag: "🇺🇸" },
+            "91": { name: "India", flag: "🇮🇳" },
+            "234": { name: "Nigeria", flag: "🇳🇬" },
+            "254": { name: "Kenya", flag: "🇰🇪" },
+            "233": { name: "Ghana", flag: "🇬🇭" },
+            "27": { name: "South Africa", flag: "🇿🇦" },
+            "20": { name: "Egypt", flag: "🇪🇬" },
+            "212": { name: "Morocco", flag: "🇲🇦" },
+            "213": { name: "Algeria", flag: "🇩🇿" },
+            "255": { name: "Tanzania", flag: "🇹🇿" },
+            "256": { name: "Uganda", flag: "🇺🇬" },
+            "237": { name: "Cameroon", flag: "🇨🇲" },
+            "225": { name: "Ivory Coast", flag: "🇨🇮" },
+            "221": { name: "Senegal", flag: "🇸🇳" },
+            "260": { name: "Zambia", flag: "🇿🇲" },
+            "263": { name: "Zimbabwe", flag: "🇿🇼" },
+            "251": { name: "Ethiopia", flag: "🇪🇹" },
+            "7": { name: "Russia / Kazakhstan", flag: "🇷🇺" },
+            "44": { name: "United Kingdom", flag: "🇬🇧" },
+            "62": { name: "Indonesia", flag: "🇮🇩" },
+            "84": { name: "Vietnam", flag: "🇻🇳" },
+            "63": { name: "Philippines", flag: "🇵🇭" },
+            "55": { name: "Brazil", flag: "🇧🇷" }
+        };
+
+        function getCountryData(number) {
+            if (!number) return { name: "Global Route", flag: "🌐" };
+            const clean = number.replace(/\D/g, '');
+            const sorted = Object.keys(countryCodes).sort((a,b) => b.length - a.length);
+            for (const prefix of sorted) {
+                if (clean.startsWith(prefix)) return countryCodes[prefix];
+            }
+            return { name: "Global Route", flag: "🌐" };
+        }
+
+        function getAppMetaData(sms) {
+            const lower = sms.toLowerCase();
+            if (lower.includes('instagram') || lower.includes('ig') || lower.includes('insta')) return { icon: '📸', tag: 'INSTAGRAM' };
+            if (lower.includes('facebook') || lower.includes('fb')) return { icon: '📘', tag: 'FACEBOOK' };
+            if (lower.includes('whatsapp') || lower.includes('wa')) return { icon: '💬', tag: 'WHATSAPP' };
+            return { icon: '📩', tag: 'SYSTEM' };
+        }
+
+        function getAppDetails(sms) {
+            const lowerSms = sms.toLowerCase();
+            if (lowerSms.includes('facebook') || lowerSms.includes('fb')) return { name: 'FACEBOOK', tag: 'FACEBOOK', icon: '<i class="fa-brands fa-facebook text-[#1877F2]"></i>', colorClass: 'text-[#1877F2]' };
+            if (lowerSms.includes('instagram') || lowerSms.includes('ig') || lowerSms.includes('insta')) return { name: 'INSTAGRAM', tag: 'INSTAGRAM', icon: '<i class="fa-brands fa-instagram text-[#E1306C]"></i>', colorClass: 'text-[#E1306C]' };
+            if (lowerSms.includes('whatsapp') || lowerSms.includes('wa')) return { name: 'WHATSAPP', tag: 'WHATSAPP', icon: '<i class="fa-brands fa-whatsapp text-[#25D366]"></i>', colorClass: 'text-[#25D366]' };
+            return { name: 'SYSTEM', tag: 'SYSTEM', icon: '<i class="fa-solid fa-envelope text-gray-400"></i>', colorClass: 'text-gray-400' };
+        }
+
+        function extractOTP(sms) {
+            if (!sms) return "------";
+            let matches = sms.match(/\b\d{4,8}\b/);
+            if (matches) return matches[0];
+            let spacedMatches = sms.match(/\b\d{3}[\s-]\d{3}\b/);
+            if (spacedMatches) return spacedMatches[0].replace(/[\s-]/g, "");
+            return "------";
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => showCustomToast(text)).catch(() => {
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showCustomToast(text);
+            });
+        }
+
+        function showCustomToast(code) {
+            const toast = document.getElementById('copy-toast');
+            const toastText = document.getElementById('toast-text');
+            if (toast && toastText) {
+                toastText.innerText = `Code Copied: ${code}`;
+                toast.classList.remove('opacity-0', 'pointer-events-none', 'scale-90');
+                toast.classList.add('opacity-100', 'scale-100');
+                setTimeout(() => {
+                    toast.classList.remove('opacity-100', 'scale-100');
+                    toast.classList.add('opacity-0', 'pointer-events-none', 'scale-90');
+                }, 2500);
+            }
+        }
+
+        function filterCodes() {
+            const query = document.getElementById('search-input').value.toLowerCase();
+            Array.from(document.getElementsByClassName('sms-card')).forEach(card => {
+                card.style.display = card.textContent.toLowerCase().includes(query) ? "block" : "none";
+            });
         }
 
         window.onload = () => {
+            applyDynamicSettings();
+            checkUserVerification(false);
+
             fetchLatestSMS();
-            setInterval(fetchLatestSMS, 3000);
+            fetchConsoleTraffic();
+            setInterval(() => {
+                fetchLatestSMS();
+                fetchConsoleTraffic();
+            }, 3000);
         };
     </script>
 </body>
