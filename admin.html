@@ -8,71 +8,248 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Firebase SDK (Compat) -->
+    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-    <style> body { background-color: #0B0E11; } </style>
+    <style>
+        body { background-color: #0B0E11; }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: #00A859; border-radius: 10px; }
+    </style>
 </head>
 <body class="text-white min-h-screen flex flex-col items-center justify-start pb-20 relative">
 
-    <div class="w-full bg-[#11161B] border-b border-gray-800 p-4 flex justify-between items-center sticky top-0 z-50">
-        <h1 class="text-base font-black uppercase text-white tracking-wider flex items-center gap-2">
-            <span class="text-[#00A859]"><i class="fa-solid fa-shield-halved"></i></span> Admin Control
-        </h1>
+    <!-- Top Header -->
+    <div class="w-full bg-[#11161B] border-b border-gray-800 p-4 flex justify-between items-center sticky top-0 z-40">
+        <div class="flex items-center gap-3">
+            <button onclick="toggleSidebar()" class="text-gray-300 hover:text-white text-xl p-1 focus:outline-none">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+            <h1 class="text-sm font-black uppercase text-white tracking-wider flex items-center gap-2">
+                <span class="text-[#00A859]"><i class="fa-solid fa-shield-halved"></i></span> ADMIN CONTROL
+            </h1>
+        </div>
         <span id="status-badge" class="text-[10px] bg-emerald-950/60 text-emerald-400 border border-emerald-800 px-3 py-1 rounded-full font-mono flex items-center gap-1.5">
             <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Firebase Connected
         </span>
     </div>
 
-    <div class="w-full max-w-3xl p-4 md:p-6 flex flex-col gap-6">
-        <div class="bg-[#11161B] border border-gray-800 rounded-2xl p-5 flex flex-col gap-4 text-xs shadow-xl">
-            <h2 class="text-xs font-bold text-[#00A859] uppercase tracking-wider"><i class="fa-solid fa-sliders"></i> System Settings</h2>
-            
-            <div>
-                <label class="block text-gray-400 mb-1">Page Title / Name</label>
-                <input type="text" id="cfg-page-name" placeholder="Stock OTP Zone" class="w-full bg-[#181E25] border border-gray-800 rounded-xl p-3 text-white focus:outline-none focus:border-[#00A859]">
+    <!-- Sidebar Navigation Menu Drawer (Screenshot 2 exact match) -->
+    <div id="sidebar-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden opacity-0 transition-opacity duration-300"></div>
+    <div id="sidebar" class="fixed inset-y-0 left-0 w-64 bg-[#11161B] border-r border-gray-800 z-50 transform -translate-x-full transition-transform duration-300 ease-in-out p-5 flex flex-col gap-6 shadow-2xl">
+        <div class="flex justify-between items-center border-b border-gray-800 pb-3">
+            <span class="text-xs font-bold text-gray-300 uppercase tracking-widest">NAVIGATION MENU</span>
+            <button onclick="toggleSidebar()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+        </div>
+        <nav class="flex flex-col gap-2.5">
+            <button onclick="switchTab('dashboard')" class="flex items-center gap-3 p-3 rounded-xl bg-[#181E25] hover:bg-[#1E2732] text-xs font-bold text-gray-200 transition">
+                <i class="fa-solid fa-chart-pie text-[#00A859] text-base"></i> Dashboard & Stats
+            </button>
+            <button onclick="switchTab('credentials')" class="flex items-center gap-3 p-3 rounded-xl bg-[#181E25] hover:bg-[#1E2732] text-xs font-bold text-gray-200 transition">
+                <i class="fa-solid fa-key text-blue-400 text-base"></i> Bot & API Credentials
+            </button>
+            <button onclick="switchTab('channels')" class="flex items-center gap-3 p-3 rounded-xl bg-[#181E25] hover:bg-[#1E2732] text-xs font-bold text-gray-200 transition">
+                <i class="fa-solid fa-layer-group text-purple-400 text-base"></i> Channels & Groups
+            </button>
+        </nav>
+    </div>
+
+    <!-- Main Content Container -->
+    <div class="w-full max-w-2xl p-4 md:p-6 flex flex-col gap-6">
+
+        <!-- TAB 1: DASHBOARD & STATS (Screenshot 3 exact match) -->
+        <div id="tab-dashboard" class="tab-content flex flex-col gap-5">
+            <div class="flex items-center gap-2 text-xs font-bold text-[#00A859] uppercase tracking-wider">
+                <i class="fa-solid fa-gauge-high"></i>
+                <span>TODAY'S LIVE OVERVIEW</span>
             </div>
 
-            <div>
-                <label class="block text-gray-400 mb-1">VoltX API Key</label>
-                <input type="text" id="cfg-voltx-api" placeholder="MCB6YS8IE05" class="w-full bg-[#181E25] border border-gray-800 rounded-xl p-3 text-white focus:outline-none focus:border-[#00A859]">
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-gray-400 mb-1">Telegram Bot Token</label>
-                    <input type="text" id="cfg-bot-token" placeholder="8781596083:AAHUcAs..." class="w-full bg-[#181E25] border border-gray-800 rounded-xl p-3 text-white focus:outline-none focus:border-[#00A859]">
+            <div class="grid grid-cols-2 gap-4">
+                <!-- Today Total OTPs Card -->
+                <div class="bg-[#11161B] border border-gray-800/80 rounded-2xl p-5 flex flex-col gap-2 relative shadow-xl">
+                    <div class="flex justify-between items-center text-gray-400 text-xs">
+                        <span>Today Total OTPs</span>
+                        <i class="fa-solid fa-envelope text-[#00A859] text-lg"></i>
+                    </div>
+                    <span id="stat-today-otps" class="text-3xl font-black text-white font-mono">0</span>
+                    <span class="text-[9px] text-gray-500 font-mono">Live Sync from API</span>
                 </div>
-                <div>
-                    <label class="block text-gray-400 mb-1">Forward Group ID</label>
-                    <input type="text" id="cfg-forward-group" placeholder="-1004429418333" class="w-full bg-[#181E25] border border-gray-800 rounded-xl p-3 text-white focus:outline-none focus:border-[#00A859]">
-                </div>
-            </div>
 
-            <div>
-                <label class="block text-gray-400 mb-1">Bot Button Link</label>
-                <input type="text" id="cfg-bot-button-link" placeholder="https://t.me/StockOTPForwardBoT/snzsms" class="w-full bg-[#181E25] border border-gray-800 rounded-xl p-3 text-white focus:outline-none focus:border-[#00A859]">
+                <!-- Verified Members Card -->
+                <div class="bg-[#11161B] border border-gray-800/80 rounded-2xl p-5 flex flex-col gap-2 relative shadow-xl">
+                    <div class="flex justify-between items-center text-gray-400 text-xs">
+                        <span>Verified Members</span>
+                    </div>
+                    <span id="stat-today-users" class="text-3xl font-black text-white font-mono">0</span>
+                    <span class="text-[9px] text-gray-500 font-mono">Total Successful Join Verification</span>
+                </div>
             </div>
         </div>
 
-        <button onclick="saveAllSettings()" id="save-btn" class="w-full bg-[#00A859] hover:bg-[#008f4b] text-white font-extrabold text-sm py-3.5 rounded-2xl transition shadow-xl flex items-center justify-center gap-2">
+        <!-- TAB 2: CREDENTIALS & API -->
+        <div id="tab-credentials" class="tab-content hidden flex flex-col gap-5">
+            <h2 class="text-xs font-bold text-[#00A859] uppercase tracking-wider flex items-center gap-2">
+                <i class="fa-solid fa-sliders"></i> Bot & API Credentials
+            </h2>
+
+            <div class="bg-[#11161B] border border-gray-800 rounded-2xl p-5 flex flex-col gap-4 text-xs shadow-xl">
+                <div>
+                    <label class="block text-gray-400 mb-1">Page Title / Name</label>
+                    <input type="text" id="cfg-page-name" placeholder="IBS CENTER" class="w-full bg-[#181E25] border border-gray-800 rounded-xl p-3 text-white focus:outline-none focus:border-[#00A859]">
+                </div>
+
+                <div>
+                    <label class="block text-gray-400 mb-1">VoltX API Key</label>
+                    <input type="text" id="cfg-voltx-api" placeholder="MCB6YS8IE05" class="w-full bg-[#181E25] border border-gray-800 rounded-xl p-3 text-white focus:outline-none focus:border-[#00A859]">
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-gray-400 mb-1">Telegram Bot Token</label>
+                        <input type="text" id="cfg-bot-token" placeholder="8781596083:AAHUcAs..." class="w-full bg-[#181E25] border border-gray-800 rounded-xl p-3 text-white focus:outline-none focus:border-[#00A859]">
+                    </div>
+                    <div>
+                        <label class="block text-gray-400 mb-1">Forward Group ID</label>
+                        <input type="text" id="cfg-forward-group" placeholder="-1004429418333" class="w-full bg-[#181E25] border border-gray-800 rounded-xl p-3 text-white focus:outline-none focus:border-[#00A859]">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-gray-400 mb-1">Bot Button Link</label>
+                    <input type="text" id="cfg-bot-button-link" placeholder="https://t.me/StockOTPForwardBoT/snzsms" class="w-full bg-[#181E25] border border-gray-800 rounded-xl p-3 text-white focus:outline-none focus:border-[#00A859]">
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3: CHANNELS & GROUPS MANAGER -->
+        <div id="tab-channels" class="tab-content hidden flex flex-col gap-5">
+            <h2 class="text-xs font-bold text-[#00A859] uppercase tracking-wider flex items-center gap-2">
+                <i class="fa-solid fa-bullhorn"></i> Channels & Groups Manager
+            </h2>
+
+            <div class="bg-[#11161B] border border-gray-800 rounded-2xl p-5 flex flex-col gap-3 shadow-xl">
+                <span class="text-xs font-bold text-gray-300">Add Target Link</span>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <input type="text" id="new-item-title" placeholder="Title (e.g. Official Channel)" class="bg-[#181E25] border border-gray-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-[#00A859]">
+                    <input type="text" id="new-item-url" placeholder="https://t.me/StockOTPUpdate" class="bg-[#181E25] border border-gray-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-[#00A859]">
+                    <select id="new-item-type" class="bg-[#181E25] border border-gray-800 rounded-xl p-3 text-xs text-white focus:outline-none">
+                        <option value="channel">Channel</option>
+                        <option value="group">Support Group</option>
+                    </select>
+                </div>
+                <button onclick="addDynamicItem()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs py-3 rounded-xl transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-plus"></i> Add Link
+                </button>
+            </div>
+
+            <div id="dynamic-list-container" class="flex flex-col gap-3"></div>
+        </div>
+
+        <!-- Save Button (Screenshot 3 exact match) -->
+        <button onclick="saveAllSettings()" id="save-btn" class="w-full bg-[#00A859] hover:bg-[#008f4b] text-white font-extrabold text-sm py-3.5 rounded-xl transition shadow-xl flex items-center justify-center gap-2 mt-2">
             <i class="fa-solid fa-floppy-disk"></i>
             <span>Save Configuration to Firebase</span>
         </button>
         <p id="msg-status" class="text-center font-mono text-xs text-emerald-400 mt-1"></p>
+
+    </div>
+
+    <!-- Floating Gear Icon (Screenshot exact) -->
+    <div class="fixed bottom-4 right-4 z-30">
+        <button onclick="toggleSidebar()" class="w-10 h-10 rounded-full bg-[#181E25] border border-gray-800 text-gray-400 hover:text-white flex items-center justify-center shadow-lg transition">
+            <i class="fa-solid fa-gear animate-spin-slow"></i>
+        </button>
     </div>
 
     <script>
-        // ⚡ DYNAMIC FIREBASE AUTO-CONNECT FROM URL PARAMETER (?db=...)
-        const urlParams = new URLSearchParams(window.location.search);
-        const buyerDbUrl = urlParams.get('db') || "https://today-5adb0-default-rtdb.firebaseio.com";
+        const firebaseConfig = {
+          apiKey: "AIzaSyDuHjMsmCTIOi3EzBLIeLN2m4l8V-p4LDc",
+          authDomain: "today-5adb0.firebaseapp.com",
+          databaseURL: "https://today-5adb0-default-rtdb.firebaseio.com",
+          projectId: "today-5adb0",
+          storageBucket: "today-5adb0.firebasestorage.app",
+          messagingSenderId: "875395746173",
+          appId: "1:875395746173:web:66911ab9fb4468e7dde414",
+          measurementId: "G-0HWJQNGG5W"
+        };
 
         if (!firebase.apps.length) {
-            firebase.initializeApp({ databaseURL: buyerDbUrl });
+            firebase.initializeApp(firebaseConfig);
         }
         const db = firebase.database();
 
-        // Load Current Settings
+        let dynamicItems = [];
+
+        function toggleSidebar() {
+            const sb = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            if (sb.classList.contains('-translate-x-full')) {
+                sb.classList.remove('-translate-x-full');
+                overlay.classList.remove('hidden');
+                setTimeout(() => overlay.classList.remove('opacity-0'), 10);
+            } else {
+                sb.classList.add('-translate-x-full');
+                overlay.classList.add('opacity-0');
+                setTimeout(() => overlay.classList.add('hidden'), 300);
+            }
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+            toggleSidebar();
+        }
+
+        function addDynamicItem() {
+            const title = document.getElementById('new-item-title').value.trim();
+            const url = document.getElementById('new-item-url').value.trim();
+            const type = document.getElementById('new-item-type').value;
+
+            if (!title || !url) {
+                alert("দয়া করে Title এবং URL দুটোই দিন!");
+                return;
+            }
+
+            dynamicItems.push({ id: Date.now(), title, url, type });
+            document.getElementById('new-item-title').value = "";
+            document.getElementById('new-item-url').value = "";
+            renderDynamicItems();
+        }
+
+        function removeItem(id) {
+            dynamicItems = dynamicItems.filter(item => item.id !== id);
+            renderDynamicItems();
+        }
+
+        function renderDynamicItems() {
+            const container = document.getElementById('dynamic-list-container');
+            container.innerHTML = "";
+
+            if (dynamicItems.length === 0) {
+                container.innerHTML = `<p class="text-xs text-gray-500 text-center py-6 border border-dashed border-gray-800 rounded-2xl">কোনো চ্যানেল বা গ্রুপ অ্যাড করা নেই।</p>`;
+                return;
+            }
+
+            dynamicItems.forEach(item => {
+                const icon = item.type === 'channel' ? 'fa-telegram text-blue-400' : 'fa-users text-emerald-400';
+                container.innerHTML += `
+                    <div class="bg-[#11161B] border border-gray-800 p-4 rounded-xl flex items-center justify-between text-xs">
+                        <div class="flex items-center gap-3">
+                            <i class="fa-brands ${icon} text-lg"></i>
+                            <div class="flex flex-col">
+                                <span class="font-bold text-gray-200">${item.title}</span>
+                                <span class="text-[10px] text-gray-500 font-mono">${item.url} (${item.type})</span>
+                            </div>
+                        </div>
+                        <button onclick="removeItem(${item.id})" class="bg-red-950/40 border border-red-800/60 text-red-400 hover:text-white px-3 py-1.5 rounded-lg transition text-[10px]">
+                            <i class="fa-solid fa-trash mr-1"></i> Delete
+                        </button>
+                    </div>
+                `;
+            });
+        }
+
+        // Live Auto Sync
         db.ref("app_settings").on("value", snapshot => {
             if (snapshot.exists()) {
                 const data = snapshot.val();
@@ -81,6 +258,28 @@
                 if (data.botToken) document.getElementById('cfg-bot-token').value = data.botToken;
                 if (data.forwardGroup) document.getElementById('cfg-forward-group').value = data.forwardGroup;
                 if (data.botButtonLink) document.getElementById('cfg-bot-button-link').value = data.botButtonLink;
+                if (data.targets && Array.isArray(data.targets)) {
+                    dynamicItems = data.targets;
+                    renderDynamicItems();
+                }
+            }
+        });
+
+        // Verified Members Counter
+        db.ref("verified_users").on("value", snapshot => {
+            if (snapshot.exists()) {
+                document.getElementById('stat-today-users').innerText = Object.keys(snapshot.val()).length;
+            } else {
+                document.getElementById('stat-today-users').innerText = "0";
+            }
+        });
+
+        // Today OTP Count
+        db.ref("stats/today_otps").on("value", snapshot => {
+            if (snapshot.exists()) {
+                document.getElementById('stat-today-otps').innerText = snapshot.val();
+            } else {
+                document.getElementById('stat-today-otps').innerText = "0";
             }
         });
 
@@ -89,11 +288,12 @@
             btn.disabled = true;
 
             const payload = {
-                pageName: document.getElementById('cfg-page-name').value.trim() || "Stock OTP Zone",
+                pageName: document.getElementById('cfg-page-name').value.trim() || "IBS CENTER",
                 voltxApi: document.getElementById('cfg-voltx-api').value.trim() || "MCB6YS8IE05",
                 botToken: document.getElementById('cfg-bot-token').value.trim() || "8781596083:AAHUcAsNjkpOTW7bDwpSGWru7NrDLKZe_ms",
                 forwardGroup: document.getElementById('cfg-forward-group').value.trim() || "-1004429418333",
-                botButtonLink: document.getElementById('cfg-bot-button-link').value.trim() || "https://t.me/StockOTPForwardBoT/snzsms"
+                botButtonLink: document.getElementById('cfg-bot-button-link').value.trim() || "https://t.me/StockOTPForwardBoT/snzsms",
+                targets: dynamicItems
             };
 
             db.ref("app_settings").set(payload, (error) => {
@@ -103,7 +303,7 @@
                     msg.innerText = "❌ Save Failed: " + error.message;
                     msg.className = "text-center font-mono text-xs text-red-400 mt-1";
                 } else {
-                    msg.innerText = "✅ Saved Successfully to Buyer Firebase!";
+                    msg.innerText = "✅ Saved Successfully to Firebase!";
                     msg.className = "text-center font-mono text-xs text-emerald-400 mt-1";
                     setTimeout(() => msg.innerText = "", 3000);
                 }
