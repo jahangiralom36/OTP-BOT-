@@ -34,7 +34,7 @@
         </span>
     </div>
 
-    <!-- Sidebar Navigation Menu Drawer (Screenshot 2 exact match) -->
+    <!-- Sidebar Navigation Menu Drawer -->
     <div id="sidebar-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden opacity-0 transition-opacity duration-300"></div>
     <div id="sidebar" class="fixed inset-y-0 left-0 w-64 bg-[#11161B] border-r border-gray-800 z-50 transform -translate-x-full transition-transform duration-300 ease-in-out p-5 flex flex-col gap-6 shadow-2xl">
         <div class="flex justify-between items-center border-b border-gray-800 pb-3">
@@ -57,7 +57,7 @@
     <!-- Main Content Container -->
     <div class="w-full max-w-2xl p-4 md:p-6 flex flex-col gap-6">
 
-        <!-- TAB 1: DASHBOARD & STATS (Screenshot 3 exact match) -->
+        <!-- TAB 1: DASHBOARD & STATS -->
         <div id="tab-dashboard" class="tab-content flex flex-col gap-5">
             <div class="flex items-center gap-2 text-xs font-bold text-[#00A859] uppercase tracking-wider">
                 <i class="fa-solid fa-gauge-high"></i>
@@ -65,7 +65,6 @@
             </div>
 
             <div class="grid grid-cols-2 gap-4">
-                <!-- Today Total OTPs Card -->
                 <div class="bg-[#11161B] border border-gray-800/80 rounded-2xl p-5 flex flex-col gap-2 relative shadow-xl">
                     <div class="flex justify-between items-center text-gray-400 text-xs">
                         <span>Today Total OTPs</span>
@@ -75,7 +74,6 @@
                     <span class="text-[9px] text-gray-500 font-mono">Live Sync from API</span>
                 </div>
 
-                <!-- Verified Members Card -->
                 <div class="bg-[#11161B] border border-gray-800/80 rounded-2xl p-5 flex flex-col gap-2 relative shadow-xl">
                     <div class="flex justify-between items-center text-gray-400 text-xs">
                         <span>Verified Members</span>
@@ -145,7 +143,7 @@
             <div id="dynamic-list-container" class="flex flex-col gap-3"></div>
         </div>
 
-        <!-- Save Button (Screenshot 3 exact match) -->
+        <!-- Save Button -->
         <button onclick="saveAllSettings()" id="save-btn" class="w-full bg-[#00A859] hover:bg-[#008f4b] text-white font-extrabold text-sm py-3.5 rounded-xl transition shadow-xl flex items-center justify-center gap-2 mt-2">
             <i class="fa-solid fa-floppy-disk"></i>
             <span>Save Configuration to Firebase</span>
@@ -154,27 +152,20 @@
 
     </div>
 
-    <!-- Floating Gear Icon (Screenshot exact) -->
+    <!-- Floating Gear Icon -->
     <div class="fixed bottom-4 right-4 z-30">
         <button onclick="toggleSidebar()" class="w-10 h-10 rounded-full bg-[#181E25] border border-gray-800 text-gray-400 hover:text-white flex items-center justify-center shadow-lg transition">
-            <i class="fa-solid fa-gear animate-spin-slow"></i>
+            <i class="fa-solid fa-gear"></i>
         </button>
     </div>
 
     <script>
-        const firebaseConfig = {
-          apiKey: "AIzaSyDuHjMsmCTIOi3EzBLIeLN2m4l8V-p4LDc",
-          authDomain: "today-5adb0.firebaseapp.com",
-          databaseURL: "https://today-5adb0-default-rtdb.firebaseio.com",
-          projectId: "today-5adb0",
-          storageBucket: "today-5adb0.firebasestorage.app",
-          messagingSenderId: "875395746173",
-          appId: "1:875395746173:web:66911ab9fb4468e7dde414",
-          measurementId: "G-0HWJQNGG5W"
-        };
+        // ⚡ DYNAMIC FIREBASE CONNECTION FROM BUYER'S URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const buyerDbUrl = urlParams.get('db') || "https://today-5adb0-default-rtdb.firebaseio.com";
 
         if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
+            firebase.initializeApp({ databaseURL: buyerDbUrl });
         }
         const db = firebase.database();
 
@@ -249,7 +240,7 @@
             });
         }
 
-        // Live Auto Sync
+        // Live Auto Sync from Buyer's Database
         db.ref("app_settings").on("value", snapshot => {
             if (snapshot.exists()) {
                 const data = snapshot.val();
@@ -303,7 +294,7 @@
                     msg.innerText = "❌ Save Failed: " + error.message;
                     msg.className = "text-center font-mono text-xs text-red-400 mt-1";
                 } else {
-                    msg.innerText = "✅ Saved Successfully to Firebase!";
+                    msg.innerText = "✅ Saved Successfully to Your Firebase Database!";
                     msg.className = "text-center font-mono text-xs text-emerald-400 mt-1";
                     setTimeout(() => msg.innerText = "", 3000);
                 }
